@@ -427,3 +427,17 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# ---------------------------------------------------------------------------
+# Rieng cho repo nay
+# ---------------------------------------------------------------------------
+
+# Tai lieu PDF goc: de o may, khong day len repo public
+*.pdf
+
+# Ket qua BenchmarkDotNet sinh ra khi chay - so lieu can giu thi dan vao
+# phan "// Results" cuoi moi file bai tap
+BenchmarkDotNet.Artifacts/
+
+# File backup thua
+*.bak
