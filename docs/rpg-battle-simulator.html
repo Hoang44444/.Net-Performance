@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPG Battle Simulator — lab Value Type vs Reference Type</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#0E1329;
+    --deep:#0A0F20;
+    --panel:#171E3C;
+    --panel-hi:#1E2750;
+    --rule:#4B589A;
+    --hair:rgba(230,227,216,.14);
+    --text:#E6E3D8;
+    --dim:#98A1C4;
+    --gold:#E5AC46;
+    --val:#63D2BB;
+    --ref:#B98BE4;
+    --crit:#E06A5E;
+    --w:74rem;
+  }
+
+  *{box-sizing:border-box}
+
+  html{ -webkit-text-size-adjust:100% }
+
+  body{
+    margin:0;
+    background:
+      radial-gradient(120% 70% at 50% 0%, #1A2145 0%, var(--night) 45%, var(--deep) 100%) fixed;
+    color:var(--text);
+    font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.62;
+  }
+
+  code, .mono{ font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace }
+
+  .wrap{ width:min(var(--w),100% - 2.5rem); margin-inline:auto }
+
+  /* ---------- window chrome (JRPG menu box) ---------- */
+  .win{
+    position:relative;
+    background:linear-gradient(180deg,rgba(30,39,80,.92),rgba(20,26,56,.92));
+    border:1px solid var(--rule);
+    border-radius:4px;
+    box-shadow:inset 0 0 0 1px rgba(10,15,32,.9), inset 0 0 0 2px var(--hair), 0 18px 40px -30px #000;
+  }
+
+  /* ---------- hero ---------- */
+  .hero{ padding:4.5rem 0 2.5rem }
+
+  .banner{ padding:1.75rem 1.75rem 1.5rem }
+
+  .kicker{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.8rem;
+    letter-spacing:.02em;
+    color:var(--dim);
+    margin:0 0 .6rem;
+  }
+
+  h1{
+    font-family:"IBM Plex Sans Condensed","IBM Plex Sans",sans-serif;
+    font-weight:700;
+    font-size:clamp(2.4rem,7.5vw,4.2rem);
+    line-height:.98;
+    letter-spacing:-.015em;
+    margin:0;
+    color:#F6F3E7;
+    text-shadow:0 2px 0 rgba(10,15,32,.8);
+  }
+
+  .tagline{
+    max-width:46ch;
+    margin:.9rem 0 0;
+    color:var(--dim);
+    font-size:1.02rem;
+  }
+
+  .runline{
+    display:flex; flex-wrap:wrap; gap:.5rem .9rem; align-items:baseline;
+    margin-top:1.4rem; padding-top:1.2rem;
+    border-top:1px solid rgba(75,88,154,.45);
+    font-size:.92rem;
+  }
+  .runline .prompt{ color:var(--gold) }
+  .runline .cmd{ color:var(--text) }
+  .runline .hint{ color:var(--dim); font-size:.85rem }
+
+  /* ---------- roster ---------- */
+  .roster{ margin-top:1.25rem; padding:1.25rem 1.25rem 1.4rem }
+
+  .roster h2, .board h2, .closing h2{
+    font-family:"IBM Plex Sans Condensed",sans-serif;
+    font-size:1.05rem; font-weight:600; letter-spacing:.01em;
+    margin:0 0 .2rem;
+  }
+  .roster p.sub, .board p.sub, .closing p.sub{ margin:0 0 1.1rem; color:var(--dim); font-size:.9rem }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(15.5rem,1fr));
+    gap:.6rem;
+  }
+
+  .type{
+    display:flex; align-items:flex-start; gap:.7rem;
+    padding:.7rem .8rem;
+    background:rgba(10,15,32,.45);
+    border:1px solid rgba(75,88,154,.4);
+    border-left:3px solid var(--tone,var(--rule));
+    border-radius:3px;
+  }
+  .type .glyph{
+    flex:none; width:1.55rem; height:1.55rem; margin-top:.1rem;
+    display:grid; place-items:center;
+    font-family:"IBM Plex Mono",monospace; font-size:.72rem; font-weight:600;
+    color:var(--deep); background:var(--tone); border-radius:2px;
+  }
+  .type .name{ font-family:"IBM Plex Mono",monospace; font-size:.9rem; color:#F2EFE3 }
+  .type .why{ display:block; font-family:"IBM Plex Sans",sans-serif; font-size:.82rem; color:var(--dim); line-height:1.45 }
+  .v{ --tone:var(--val) }
+  .r{ --tone:var(--ref) }
+
+  .legend{ display:flex; gap:1.4rem; flex-wrap:wrap; margin-top:1rem; font-size:.84rem; color:var(--dim) }
+  .legend span::before{
+    content:""; display:inline-block; width:.7rem; height:.7rem; border-radius:2px;
+    margin-right:.45rem; background:var(--tone); transform:translateY(1px);
+  }
+
+  /* ---------- gauge ---------- */
+  .gauge{ margin-top:1.25rem; padding:1.1rem 1.25rem 1.2rem }
+  .gauge .row{ display:flex; align-items:baseline; justify-content:space-between; gap:1rem }
+  .gauge .label{ font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:.98rem }
+  .gauge .count{ font-family:"IBM Plex Mono",monospace; font-size:.95rem; color:var(--gold) }
+  .bar{ display:grid; grid-template-columns:repeat(8,1fr); gap:3px; margin-top:.7rem }
+  .seg{ height:.7rem; background:rgba(10,15,32,.7); border:1px solid rgba(75,88,154,.5); border-radius:2px }
+  .seg.on{ background:linear-gradient(180deg,#F2C463,var(--gold)); border-color:#F2C463 }
+  @media(prefers-reduced-motion:no-preference){ .seg{ transition:background .18s ease, border-color .18s ease } }
+
+  /* ---------- domain ---------- */
+  .board{ padding-top:2.6rem }
+  .codewin{ padding:1.1rem 1.25rem; margin-top:.2rem; overflow-x:auto }
+  pre{ margin:0; font-family:"IBM Plex Mono",monospace; font-size:.84rem; line-height:1.85; color:#D7D3C6 }
+  pre .k{ color:#7FA9F0 }
+  pre .t{ color:var(--val) }
+  pre .tr{ color:var(--ref) }
+  pre .c{ color:#6C77A3 }
+
+  /* ---------- modules ---------- */
+  .modules{ padding-top:2.6rem; padding-bottom:1rem }
+  .mod{ padding:0; margin-bottom:.9rem }
+
+  .mod-head{
+    display:flex; align-items:center; gap:.9rem; flex-wrap:wrap;
+    padding:.85rem 1.1rem;
+    border-bottom:1px solid rgba(75,88,154,.45);
+    background:rgba(10,15,32,.3);
+  }
+  .turn{
+    flex:none; width:2rem; height:2rem; display:grid; place-items:center;
+    font-family:"IBM Plex Mono",monospace; font-size:.9rem; font-weight:600;
+    color:var(--gold); border:1px solid var(--gold); border-radius:3px;
+    background:rgba(229,172,70,.08);
+  }
+  .mod-title{
+    font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600;
+    font-size:1.18rem; margin:0; flex:1 1 12rem; line-height:1.25;
+  }
+  .mod-title .slug{ font-family:"IBM Plex Mono",monospace; font-size:.9rem; font-weight:500; color:var(--val) }
+  .mod-title .muc{ display:block; font-family:"IBM Plex Sans",sans-serif; font-weight:400; font-size:.8rem; color:var(--dim) }
+
+  .done{
+    display:inline-flex; align-items:center; gap:.5rem;
+    font-size:.85rem; color:var(--dim); cursor:pointer; user-select:none;
+    padding:.25rem .55rem; border-radius:3px;
+  }
+  .done input{ accent-color:var(--gold); width:1rem; height:1rem; margin:0 }
+  .done:hover{ color:var(--text) }
+  .done:focus-within{ outline:2px solid var(--gold); outline-offset:1px }
+
+  .mod-body{ padding:1.15rem 1.1rem 1.25rem }
+  .mod-body h4{
+    font-family:"IBM Plex Sans Condensed",sans-serif; font-size:.95rem; font-weight:600;
+    margin:0 0 .45rem; color:#F2EFE3;
+  }
+  .mod-body p{ margin:0 0 .9rem; max-width:78ch }
+  .mod-body ul{ margin:0 0 .9rem; padding-left:1.1rem; max-width:78ch }
+  .mod-body li{ margin-bottom:.35rem }
+  .mod-body li::marker{ color:var(--rule) }
+  .mod-body code{
+    font-size:.86em; color:#F0DCA8;
+    background:rgba(10,15,32,.6); border:1px solid rgba(75,88,154,.35);
+    padding:.05em .35em; border-radius:3px;
+  }
+
+  .goal{
+    margin-top:1.1rem; padding:.85rem 1rem;
+    background:rgba(229,172,70,.06);
+    border-left:3px solid var(--gold);
+    border-radius:0 3px 3px 0;
+  }
+  .goal h4{ color:var(--gold); margin-bottom:.3rem }
+  .goal p{ margin:0; font-size:.95rem }
+
+  .mod.cleared .turn{ color:var(--deep); background:var(--gold) }
+  .mod.cleared .mod-head{ background:rgba(229,172,70,.07) }
+
+  /* ---------- closing ---------- */
+  .closing{ padding:1.6rem 0 5rem }
+  .two{ display:grid; grid-template-columns:1fr 1fr; gap:.9rem; align-items:start }
+  .closing .win{ padding:1.15rem 1.25rem }
+  .closing ul{ margin:0; padding-left:1.1rem; font-size:.94rem }
+  .closing li{ margin-bottom:.45rem }
+  .closing li::marker{ color:var(--rule) }
+  .final p{ margin:0; font-size:.94rem }
+  .final strong{ color:var(--gold); font-weight:600 }
+
+  @media(max-width:44rem){
+    .hero{ padding-top:2.5rem }
+    .two{ grid-template-columns:1fr }
+    .mod-title{ flex-basis:100% ; order:3}
+    .mod-head{ gap:.7rem }
+  }
+  @media(prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="win banner">
+      <p class="kicker">Đề bài · console lab C#</p>
+      <h1>RPG Battle&nbsp;Simulator</h1>
+      <p class="tagline">Mô phỏng chiến đấu theo lượt để luyện tay với value type và reference type: bộ nhớ, boxing, equality, mutable struct.</p>
+      <div class="runline mono">
+        <span class="prompt">$</span>
+        <span class="cmd">dotnet run -- &lt;module&gt;</span>
+        <span class="hint">8 module, mỗi module một nghiệp vụ và một kết quả phải đo được</span>
+      </div>
+    </div>
+
+    <div class="win roster">
+      <h2>Bộ model của domain</h2>
+      <p class="sub">Domain dùng chung cho cả 8 module. Module 8 sẽ quay lại đối chiếu với chính bảng này.</p>
+      <div class="grid">
+        <div class="type v"><span class="glyph">V</span><span><span class="name">Vector2</span><span class="why">Toạ độ trên bản đồ, cập nhật mỗi frame khi nhân vật di chuyển</span></span></div>
+        <div class="type v"><span class="glyph">V</span><span><span class="name">StatBlock</span><span class="why">Hp, Atk, Def, Spd — chụp snapshot trước trận, đối chiếu sau trận</span></span></div>
+        <div class="type v"><span class="glyph">V</span><span><span class="name">Item</span><span class="why">Vũ khí, giáp, vật phẩm trong túi đồ — cần gộp các món trùng nội dung</span></span></div>
+        <div class="type v"><span class="glyph">V</span><span><span class="name">BattleLogEntry</span><span class="why">Một dòng log của trận đấu, ghi xong không sửa lại</span></span></div>
+        <div class="type r"><span class="glyph">R</span><span><span class="name">Character</span><span class="why">Có danh tính riêng, máu và vị trí đổi liên tục suốt trận</span></span></div>
+        <div class="type r"><span class="glyph">R</span><span><span class="name">Monster</span><span class="why">Nhân vật do máy điều khiển, dùng chung đường xử lý với người chơi</span></span></div>
+        <div class="type r"><span class="glyph">R</span><span><span class="name">Party</span><span class="why">Đội hình người chơi, thêm/bớt/sửa thành viên tại chỗ</span></span></div>
+      </div>
+      <div class="legend">
+        <span style="--tone:var(--val)">Value type — copy khi gán, nằm inline</span>
+        <span style="--tone:var(--ref)">Reference type — chia sẻ tham chiếu, nằm trên heap</span>
+      </div>
+    </div>
+
+    <div class="win gauge">
+      <div class="row">
+        <span class="label">Tiến độ</span>
+        <span class="count" id="count">0 / 8 module</span>
+      </div>
+      <div class="bar" id="bar">
+        <i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i>
+        <i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="board">
+  <div class="wrap">
+    <h2>Khung model</h2>
+    <p class="sub">Định nghĩa gốc dùng xuyên suốt 8 module.</p>
+    <div class="win codewin">
+<pre><span class="k">struct</span> <span class="t">Vector2</span>   { <span class="k">float</span> X, Y; }                                   <span class="c">// vị trí/di chuyển</span>
+<span class="k">struct</span> <span class="t">StatBlock</span> { <span class="k">int</span> Hp, Atk, Def, Spd; }                        <span class="c">// chỉ số nhân vật</span>
+<span class="k">struct</span> <span class="t">Item</span>      { <span class="k">string</span> Name; ItemType Type; <span class="k">int</span> Value; }        <span class="c">// vũ khí/giáp/vật phẩm</span>
+<span class="k">record struct</span> <span class="t">BattleLogEntry</span> { <span class="k">int</span> Turn; <span class="k">string</span> Attacker; <span class="k">string</span> Defender; <span class="k">int</span> Damage; <span class="k">bool</span> Critical; }
+
+<span class="k">class</span> <span class="tr">Character</span>  { Guid Id; <span class="k">string</span> Name; StatBlock Stats; Vector2 Position; List&lt;Item&gt; Inventory; }
+<span class="k">class</span> <span class="tr">Monster</span> : Character { ... }
+<span class="k">class</span> <span class="tr">Party</span>      { List&lt;Character&gt; Members; }</pre>
+    </div>
+  </div>
+</section>
+
+<main class="modules">
+  <div class="wrap">
+
+    <article class="win mod">
+      <div class="mod-head">
+        <span class="turn">1</span>
+        <h3 class="mod-title">Value vs reference <span class="slug">valueref</span><span class="muc">mục 1.1–1.2</span></h3>
+        <label class="done"><input type="checkbox"> Xong</label>
+      </div>
+      <div class="mod-body">
+        <h4>Nghiệp vụ</h4>
+        <p>Trước khi nhân vật bước vào trận, hệ thống chụp lại một <strong>snapshot chỉ số</strong> để cuối trận đối chiếu xem tăng giảm bao nhiêu. Trong lúc đánh, chỉ số thật của nhân vật thay đổi liên tục, nhưng snapshot đã chụp phải đứng yên.</p>
+        <p>Cùng lúc đó, một nhân vật được <strong>hai hệ thống cầm chung</strong>: thanh máu trên UI và bộ xử lý combat. Combat trừ máu thì UI phải thấy ngay, không được có bước đồng bộ thủ công nào ở giữa.</p>
+        <p>Viết demo chạy được cho cả hai tình huống, kèm bảng liệt kê toàn bộ kiểu trong domain: mỗi kiểu ghi rõ nó đóng vai trò gì trong game và vì sao chọn cách biểu diễn đó.</p>
+        <div class="goal">
+          <h4>Kết quả phải đạt</h4>
+          <ul>
+            <li>Sửa chỉ số nhân vật sau khi đã chụp snapshot → in snapshot ra vẫn là số cũ, không dính thay đổi.</li>
+            <li>Trừ máu qua một trong hai tham chiếu nhân vật → tham chiếu còn lại in ra máu mới ngay.</li>
+            <li>Bảng phân loại đủ mọi kiểu trong domain, mỗi dòng có lý do gắn với nghiệp vụ cụ thể của kiểu đó — không phải định nghĩa lý thuyết chung chung.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="win mod">
+      <div class="mod-head">
+        <span class="turn">2</span>
+        <h3 class="mod-title">Truyền tham số <span class="slug">params</span><span class="muc">mục 1.3</span></h3>
+        <label class="done"><input type="checkbox"> Xong</label>
+      </div>
+      <div class="mod-body">
+        <h4>Nghiệp vụ</h4>
+        <p>Cài đặt 4 thao tác của một lượt đánh, mỗi thao tác có một ràng buộc riêng:</p>
+        <ul>
+          <li><strong>Tính sát thương</strong> từ chỉ số bên đánh và bên đỡ — thuần tính toán, chạy xong không được để lại bất kỳ thay đổi nào lên chỉ số của hai bên.</li>
+          <li><strong>Trừ máu mục tiêu</strong> — phải sửa thẳng lên chỉ số gốc của mục tiêu, không phải lên một bản sao rồi vứt đi.</li>
+          <li><strong>Thử lên cấp</strong> — trả về đồng thời hai thứ: có lên cấp được không, và bộ chỉ số mới nếu có. Nơi gọi không phải khởi tạo sẵn biến hứng kết quả.</li>
+          <li><strong>Ghi log chỉ số</strong> — chỉ đọc, và phải được bảo đảm <em>ở mức biên dịch</em> rằng hàm này không thể lỡ tay sửa chỉ số, chứ không trông chờ vào kỷ luật của người viết.</li>
+        </ul>
+        <p>Chạy một trận demo vài lượt dùng đủ cả 4 thao tác.</p>
+        <div class="goal">
+          <h4>Kết quả phải đạt</h4>
+          <ul>
+            <li>In máu trước/sau mỗi lượt; số liệu khớp đúng với sát thương đã tính ở lượt đó.</li>
+            <li>Sau khi tính sát thương, chỉ số hai bên không đổi một đơn vị nào — chứng minh bằng giá trị in ra.</li>
+            <li>Hàm trừ máu làm đổi được chỉ số gốc thật, kiểm chứng bằng giá trị đọc lại sau khi hàm trả về.</li>
+            <li>Ghi chú chỉ đúng dòng nào trong hàm log sẽ làm chương trình không biên dịch được nếu cố tình sửa chỉ số, và vì sao.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="win mod">
+      <div class="mod-head">
+        <span class="turn">3</span>
+        <h3 class="mod-title">Bộ nhớ và layout <span class="slug">memory</span><span class="muc">mục 1.4</span></h3>
+        <label class="done"><input type="checkbox"> Xong</label>
+      </div>
+      <div class="mod-body">
+        <h4>Nghiệp vụ</h4>
+        <p>Server giữ 100.000 nhân vật cùng lúc trong một trận chiến trường lớn. Bên vận hành hỏi hai câu, và cần trả lời bằng <strong>byte đo được, không ước lượng</strong>:</p>
+        <ul>
+          <li>Một nhân vật đầy đủ tốn bao nhiêu RAM thật? Nếu chỉ giữ bộ chỉ số trần — bỏ tên, bỏ túi đồ — thì tiết kiệm được bao nhiêu?</li>
+          <li>Khi khai báo một bộ chỉ số, <strong>thứ tự các trường</strong> có ảnh hưởng tới kích thước không? Dựng ít nhất 2 biến thể thứ tự rồi trả lời bằng số.</li>
+        </ul>
+        <div class="goal">
+          <h4>Kết quả phải đạt</h4>
+          <ul>
+            <li>Bảng byte cho từng kiểu trong domain.</li>
+            <li>Con số cụ thể cho chênh lệch RAM giữa 100.000 nhân vật đầy đủ và 100.000 bộ chỉ số trần, kèm giải thích phần chênh đó thực chất là cái gì.</li>
+            <li>Chỉ ra biến thể thứ tự trường nào tốn ít byte hơn, và giải thích được phần byte thừa ở biến thể kia sinh ra từ đâu.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="win mod">
+      <div class="mod-head">
+        <span class="turn">4</span>
+        <h3 class="mod-title">So sánh bằng nhau <span class="slug">equality</span><span class="muc">mục 1.5</span></h3>
+        <label class="done"><input type="checkbox"> Xong</label>
+      </div>
+      <div class="mod-body">
+        <h4>Nghiệp vụ</h4>
+        <ul>
+          <li><strong>Gộp vật phẩm trùng trong túi đồ</strong>: hai vật phẩm cùng tên, cùng loại, cùng chỉ số là một món — kể cả khi chúng là hai bản nằm ở hai chỗ khác nhau trong bộ nhớ.</li>
+          <li><strong>Bộ chỉ số cũng so theo nội dung</strong>: cùng Hp/Atk/Def/Spd thì bằng nhau.</li>
+          <li><strong>Nhân vật thì ngược lại</strong>: hai nhân vật trùng tên, trùng chỉ số vẫn là hai nhân vật khác nhau. Chỉ cùng một danh tính mới được coi là một.</li>
+          <li>Cả ba kiểu phải dùng được làm <strong>khoá tra cứu</strong> trong bảng tra và tập hợp, cho kết quả nhất quán với phép so sánh ở trên.</li>
+          <li>Vòng tổng kết cuối trận phải so <strong>1 triệu cặp bộ chỉ số</strong>. Bản hiện tại vừa chậm vừa sinh rác — tối ưu cho tới khi phép so sánh <strong>không cấp phát bộ nhớ nào</strong>.</li>
+        </ul>
+        <div class="goal">
+          <h4>Kết quả phải đạt</h4>
+          <ul>
+            <li>Bảng thời gian so 1 triệu cặp giữa bản chưa tối ưu và bản đã tối ưu, kèm số lần nhanh hơn.</li>
+            <li>Bản đã tối ưu: tổng byte cấp phát trong toàn vòng lặp bằng <strong>0</strong>.</li>
+            <li>Hai vật phẩm trùng nội dung rơi vào cùng một ô trong bảng tra; hai nhân vật trùng tên rơi vào hai ô khác nhau.</li>
+            <li>Giải thích được vì sao bản chưa tối ưu lại sinh rác dù trong vòng lặp không hề có một lệnh <code>new</code> nào.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="win mod">
+      <div class="mod-head">
+        <span class="turn">5</span>
+        <h3 class="mod-title">Săn boxing <span class="slug">boxing</span><span class="muc">mục 1.6</span></h3>
+        <label class="done"><input type="checkbox"> Xong</label>
+      </div>
+      <div class="mod-body">
+        <h4>Nghiệp vụ</h4>
+        <p>Rà lại toàn bộ code của lab và tái hiện <strong>12 tình huống</strong> mà một giá trị nhỏ bị âm thầm đẩy lên vùng nhớ chung, dù đọc code không thấy chỗ nào cấp phát. Các vùng cần soi, mỗi vùng là một nghiệp vụ có thật trong game: ghi log chỉ số, xếp vật phẩm vào danh sách, sắp xếp toạ độ theo thứ tự, dùng bộ chỉ số làm khoá tra cứu, so sánh hai giá trị, ghép chuỗi hiển thị, duyệt tập hợp, truyền giá trị vào hàm nhận kiểu tổng quát.</p>
+        <p>Sau đó lấy một tác vụ thật — <strong>thống kê 1 triệu bản ghi vật phẩm rơi ra sau trận</strong> — và dựng 2 phiên bản của cùng tác vụ: một bản dùng kho chứa đời cũ, một bản dùng kho chứa hiện đại.</p>
+        <div class="goal">
+          <h4>Kết quả phải đạt</h4>
+          <ul>
+            <li>12 đoạn code chạy được, mỗi đoạn có ghi chú chỉ <em>đúng biểu thức nào</em> gây cấp phát và nguyên nhân.</li>
+            <li>Bảng thời gian 2 phiên bản kèm số lần nhanh hơn.</li>
+            <li>Số lượt dọn rác của bản tối ưu thấp hơn hẳn — ghi cả hai con số, không chỉ nói "ít hơn".</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="win mod">
+      <div class="mod-head">
+        <span class="turn">6</span>
+        <h3 class="mod-title">Mutable struct trong list <span class="slug">mutablestruct</span><span class="muc">mục 1.7</span></h3>
+        <label class="done"><input type="checkbox"> Xong</label>
+      </div>
+      <div class="mod-body">
+        <h4>Nghiệp vụ</h4>
+        <p>Một đòn tấn công diện rộng giáng lên cả đội hình: mỗi thành viên nhận một lượng sát thương riêng. Viết hàm nhận vào đội hình và mảng sát thương theo từng thành viên, áp sát thương cho toàn đội tại chỗ. Chạy vòng lặp N lượt, mỗi lượt gọi hàm này một lần.</p>
+        <div class="goal">
+          <h4>Kết quả phải đạt</h4>
+          <ul>
+            <li>Sau N lượt, tổng máu còn lại của cả đội khớp <strong>chính xác</strong> với tổng máu ban đầu trừ tổng sát thương đã áp — kiểm bằng assert, không nhìn bằng mắt.</li>
+            <li>Viết theo cách trực quan nhất thì sát thương bị mất trắng, cả đội không mất máu nào. Có ghi chú giải thích vì sao cách đó không ăn, và vì sao cách đang dùng thì ăn — hiểu bằng lý thuyết, không cần build ra lỗi thật.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="win mod">
+      <div class="mod-head">
+        <span class="turn">7</span>
+        <h3 class="mod-title">Các kiểu đặc biệt <span class="slug">specialtypes</span><span class="muc">mục 1.8</span></h3>
+        <label class="done"><input type="checkbox"> Xong</label>
+      </div>
+      <div class="mod-body">
+        <h4>Nghiệp vụ</h4>
+        <p>Năm tình huống, mỗi tình huống một câu hỏi phải trả lời bằng kết quả chạy thật:</p>
+        <ul>
+          <li><strong>Tra cứu theo tên</strong> — tra nhân vật và vật phẩm bằng tên. Tên đọc từ file cấu hình và tên viết cứng trong code trông giống hệt nhau; chứng minh xem chúng có thật sự là cùng một thứ trong bộ nhớ hay không, và hệ quả tới tốc độ tra cứu.</li>
+          <li><strong>Buff tạm thời</strong> — một hiệu ứng có thể đang có hiệu lực với một giá trị, hoặc đang không có hiệu lực. Trạng thái "không có" phải phân biệt được với "có nhưng bằng 0". So chi phí bộ nhớ giữa hai trạng thái đó.</li>
+          <li><strong>Kết quả một đòn đánh</strong> — trả về cùng lúc sát thương và cờ chí mạng. Dựng 2 cách trả về khác nhau rồi so chi phí cấp phát của chúng.</li>
+          <li><strong>Nạp danh sách quái</strong> — đọc file text 1 triệu dòng dạng <code>name,hp,atk,def</code>. Bản hiện tại ngốn RAM vì bước tách dòng; tối ưu để cắt tối đa lượng RAM sinh ra trong lúc parse.</li>
+          <li><strong>Log trận đấu</strong> — mỗi dòng log là bất biến, hai dòng cùng nội dung coi như một. Nhân vật thì vẫn phải giữ danh tính riêng. Chọn cách biểu diễn cho từng cái và giải thích tại sao không dùng chung một cách.</li>
+        </ul>
+        <div class="goal">
+          <h4>Kết quả phải đạt</h4>
+          <ul>
+            <li>Mỗi tình huống có một đoạn code chạy được và một con số hoặc kết quả so sánh cụ thể xác nhận kết luận.</li>
+            <li>Riêng phần nạp file: 2 con số RAM trước/sau tối ưu và tỉ lệ cắt giảm.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="win mod">
+      <div class="mod-head">
+        <span class="turn">8</span>
+        <h3 class="mod-title">Wizard tư vấn struct hay class <span class="slug">advisor</span><span class="muc">mục 1.9</span></h3>
+        <label class="done"><input type="checkbox"> Xong</label>
+      </div>
+      <div class="mod-body">
+        <h4>Nghiệp vụ</h4>
+        <p>Một đồng nghiệp sắp thêm kiểu dữ liệu mới vào game và không biết nên chọn cách biểu diễn nào. Viết console wizard hỏi–đáp: kích thước dữ liệu bao nhiêu, có cần bất biến / chụp snapshot không, bị copy bao nhiêu lần mỗi giây, có cần giữ danh tính xuyên suốt vòng đời không, có cần kế thừa và đa hình không. Wizard in ra khuyến nghị kèm lý do dẫn tới khuyến nghị đó.</p>
+        <p>Chạy wizard cho đủ 5 model chính của lab.</p>
+        <div class="goal">
+          <h4>Kết quả phải đạt</h4>
+          <ul>
+            <li>Khuyến nghị của wizard cho cả 5 model khớp đúng với lựa chọn đã cài thật ở Module 1.</li>
+            <li>Chỗ nào lệch phải kết luận được lệch ở đâu: luật trong wizard sai, hay lựa chọn ban đầu sai.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</main>
+
+<section class="closing">
+  <div class="wrap">
+    <div class="two">
+      <div class="win">
+        <h2>Luật chung của lab</h2>
+        <p class="sub">Áp cho cả 8 module.</p>
+        <ul>
+          <li>Chạy được bằng <code>dotnet run</code> thuần, chọn module qua tham số dòng lệnh — không phụ thuộc IDE.</li>
+          <li>Mọi con số benchmark phải đo ở bản Release và không chạy trong debugger; số đo ở bản Debug không được tính.</li>
+          <li>Dữ liệu lớn (100k–1M) sinh bằng generator, không gõ tay. Sinh xong mới bắt đầu bấm giờ.</li>
+          <li>Mỗi con số công bố phải lặp lại được: ghi rõ chạy bao nhiêu vòng và lấy kết quả theo tiêu chí nào.</li>
+          <li><strong>Chọn kỹ thuật và công cụ đo là việc của người làm.</strong> Đề bài chỉ nêu nghiệp vụ và chấm con số cuối cùng.</li>
+        </ul>
+      </div>
+      <div class="win final">
+        <h2>Điều kiện thắng</h2>
+        <p class="sub">Của cả lab.</p>
+        <p>Mọi module chạy được và trả về đúng <strong>kết quả hoặc con số</strong> ghi ở phần “Kết quả phải đạt”. Code minh hoạ mà không có gì kiểm chứng được thì chưa tính là xong.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const boxes = Array.from(document.querySelectorAll('.done input'));
+  const segs  = Array.from(document.querySelectorAll('#bar .seg'));
+  const count = document.getElementById('count');
+
+  function refresh(){
+    const n = boxes.filter(b => b.checked).length;
+    segs.forEach((s,i) => s.classList.toggle('on', i < n));
+    count.textContent = n + ' / ' + boxes.length + ' module';
+  }
+
+  boxes.forEach(b => b.addEventListener('change', () => {
+    b.closest('.mod').classList.toggle('cleared', b.checked);
+    refresh();
+  }));
+
+  refresh();
+</script>
+
+</body>
+</html>

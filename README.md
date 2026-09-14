@@ -11,18 +11,26 @@ Target framework: **net10.0**.
 ├── DotNetPerformance.slnx
 ├── docs/
 │   ├── dotnet-performance-roadmap.html     # lộ trình tổng
-│   └── rpg-battle-simulator-de-bai.md      # đề lab console RPG (luyện chương 1)
-└── src/
-    └── DemoDotNetProfiling/
-        ├── Program.cs
-        └── Chapter01_ValueTypeVsReferenceType/
-            ├── ChapterMenu.cs              # menu điều phối, nhập số bài để chạy
-            └── Ex01..Ex10_*.cs             # mỗi file một bài
+│   ├── rpg-battle-simulator.html           # đề lab console RPG (luyện chương 1)
+│   └── project/
+│       └── final-test-flashcart-engine.html  # đề final test FlashCart Engine
+├── src/
+│   ├── DemoDotNetProfiling/
+│   │   ├── Program.cs
+│   │   └── Chapter01_ValueTypeVsReferenceType/
+│   │       ├── ChapterMenu.cs              # menu điều phối, nhập số bài để chạy
+│   │       └── Ex01..Ex10_*.cs             # mỗi file một bài
+│   └── Project/                            # repo riêng, không nằm trong repo này
+└── tools/
+    ├── DiagSessionReader/                  # đọc file .diagsession của VS Profiler
+    └── profile-rpg-battle.ps1              # thu thập CPU/allocation cho lab RPG
 ```
 
 Namespace dùng chung cho cả chương: `DemoDotNetProfiling.Chapter01`.
 
 > Hai file PDF tài liệu gốc **không** nằm trong repo (đã cho vào `.gitignore`) — chúng ở cùng thư mục trên máy local.
+>
+> `src/Project/` (bài final test **FlashCart Engine**) là một git repo riêng ([Hoang44444/Project](https://github.com/Hoang44444/Project)) và được `.gitignore` bỏ qua ở repo này.
 
 ## Chạy
 

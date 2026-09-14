@@ -441,3 +441,6 @@ BenchmarkDotNet.Artifacts/
 
 # File backup thua
 *.bak
+
+# src/Project la git repo rieng (github.com/Hoang44444/Project)
+src/Project/
