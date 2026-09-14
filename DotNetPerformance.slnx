@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/DemoDotNetProfiling/DemoDotNetProfiling.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/DiagSessionReader/DiagSessionReader.csproj" />
+  </Folder>
 </Solution>

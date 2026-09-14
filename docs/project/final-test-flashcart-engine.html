@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlashCart Engine — Final Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1216;
+    --panel:#161B21;
+    --panel-2:#1C222A;
+    --border:#2A313B;
+    --text:#E7E4DC;
+    --text-dim:#8D96A6;
+    --amber:#F2A93B;
+    --teal:#4ECDC4;
+    --red:#E8604C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans',sans-serif;
+    line-height:1.6;
+    padding:56px 20px 90px;
+  }
+  .page{max-width:720px;margin:0 auto;}
+  code, .mono{font-family:'IBM Plex Mono',monospace;}
+  h1{
+    font-size:clamp(28px,5vw,38px);
+    font-weight:700;
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--text-dim);
+    font-size:16px;
+    margin:0 0 36px;
+    max-width:520px;
+  }
+  .board{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    margin-bottom:48px;
+  }
+  .tile{
+    background:var(--panel);
+    padding:18px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .tile-value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:22px;
+    font-weight:600;
+    color:var(--text);
+  }
+  .tile.good .tile-value{color:var(--teal);}
+  .tile-label{font-size:12.5px;color:var(--text-dim);}
+  section{margin-top:44px;}
+  h2{
+    font-size:20px;
+    font-weight:600;
+    margin:0 0 16px;
+    padding-bottom:12px;
+    border-bottom:1px solid var(--border);
+  }
+  h3{font-size:16px;font-weight:600;margin:0 0 10px;}
+  p{margin:0 0 14px;color:var(--text);}
+  ul, ol{margin:0 0 14px;padding-left:22px;}
+  li{margin-bottom:8px;}
+  section > ul:last-child, section > ol:last-child{margin-bottom:0;}
+  code{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    padding:1px 6px;
+    border-radius:3px;
+    font-size:0.9em;
+    color:var(--amber);
+  }
+  .round-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+  }
+  .round{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-left:3px solid var(--red);
+    padding:20px;
+  }
+  .round.optimized{border-left-color:var(--teal);}
+  .round h3{color:var(--red);}
+  .round.optimized h3{color:var(--teal);}
+  .metrics-box{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px dashed var(--border);
+  }
+  .metrics-title{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    margin-bottom:8px;
+  }
+  .metrics-box ul{margin-bottom:0;}
+  .deliver-list li::marker{color:var(--amber);font-family:'IBM Plex Mono',monospace;}
+  .constraints{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    padding:18px 22px;
+  }
+  .constraints ul{margin-bottom:0;}
+  footer{
+    margin-top:56px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+    color:var(--text-dim);
+    font-size:13px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  @media (max-width:620px){
+    .board{grid-template-columns:repeat(2,1fr);}
+    .round-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>FlashCart Engine</h1>
+  <p class="subtitle">Final test: hệ thống xử lý đơn hàng giờ vàng — code, đo lường và tối ưu bộ nhớ .NET</p>
+
+  <div class="board">
+    <div class="tile">
+      <span class="tile-value">2,000,000</span>
+      <span class="tile-label">order mô phỏng</span>
+    </div>
+    <div class="tile good">
+      <span class="tile-value">≥70%</span>
+      <span class="tile-label">giảm allocated bytes</span>
+    </div>
+    <div class="tile good">
+      <span class="tile-value">≥50%</span>
+      <span class="tile-label">giảm GC Gen 0</span>
+    </div>
+    <div class="tile good">
+      <span class="tile-value">0</span>
+      <span class="tile-label">leak sau 5 lượt chạy</span>
+    </div>
+  </div>
+
+  <section>
+    <h2>Bối cảnh nghiệp vụ</h2>
+    <p>Một sàn TMĐT tổ chức flash sale 2 tiếng/ngày. Trong khung giờ đó lượng order dồn về gấp ~50 lần ngày thường. Mày build backend order-processing engine cho đợt này — dạng batch simulate, không cần network/DB thật.</p>
+    <ul>
+      <li>Catalog: 500 sản phẩm, mỗi sản phẩm có giá gốc + tồn kho ngẫu nhiên.</li>
+      <li>Discount: mua ≥ 5 sản phẩm/đơn giảm 10%; khách VIP giảm thêm 5% (cộng dồn).</li>
+      <li>Simulate <strong>2.000.000 order request</strong> đổ về liên tục trong 1 lần chạy.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Chức năng bắt buộc</h2>
+    <ol>
+      <li><strong>Order intake</strong> — parse 1 dòng request dạng text kiểu message queue: <code>"CUS10293|PRD00045|3|VIP"</code> (customerId|productId|quantity|tier).</li>
+      <li><strong>Pricing engine</strong> — tính giá cuối theo rule discount ở trên.</li>
+      <li><strong>Inventory check & deduct</strong> — đủ tồn kho thì trừ kho, không đủ thì reject (ghi log riêng, không crash).</li>
+      <li><strong>Transaction record</strong> — mỗi order thành công tạo 1 record: OrderId, CustomerId, ProductId, Quantity, FinalPrice, Timestamp.</li>
+      <li><strong>Notification fan-out</strong> — mỗi giao dịch thành công phải bắn event cho 3 subsystem giả lập: <code>WarehouseService</code>, <code>InvoiceService</code>, <code>AnalyticsService</code>.</li>
+      <li><strong>Payment Gateway connection</strong> — mỗi order khi thanh toán phải mở 1 "connection" giả lập (object nắm giữ tài nguyên) và đóng lại sau khi dùng.</li>
+      <li><strong>End-of-sale report</strong> — kết thúc thì gom dữ liệu (tổng doanh thu, top 10 sản phẩm bán chạy, số đơn reject) vào 1 buffer rồi in ra.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Cách làm: bắt buộc 2 vòng</h2>
+    <div class="round-grid">
+      <div class="round naive">
+        <h3>Vòng 1 — Naive</h3>
+        <p>Viết theo bản năng, ưu tiên đúng nghiệp vụ, không cần tối ưu. Cho phép (thậm chí khuyến khích) cố ý mắc lỗi kinh điển: class cho OrderItem/Money, <code>ArrayList</code>/<code>object</code> ở đâu đó, nối string trong vòng lặp, quên gỡ event ở bước 5, không <code>Dispose</code> đúng ở bước 6.</p>
+        <div class="metrics-box">
+          <p class="metrics-title">ĐO BASELINE</p>
+          <ul>
+            <li>Tổng thời gian xử lý 2 triệu order</li>
+            <li>Tổng byte allocated</li>
+            <li>Số lần GC theo từng Gen</li>
+            <li>Bộ nhớ cuối, có tăng dần qua 5 lượt "flash sale" lặp lại trong 1 process không (phép thử leak)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="round optimized">
+        <h3>Vòng 2 — Optimized</h3>
+        <p>Áp dụng đúng kỹ thuật value/reference type · stack/heap · object lifetime, sửa từng chỗ đã cố ý làm sai ở vòng 1:</p>
+        <ul>
+          <li>OrderItem / Money → <code>readonly struct</code></li>
+          <li>Parse request line → <code>ReadOnlySpan&lt;char&gt;</code>, không Split/Substring</li>
+          <li>Loại boxing (bỏ ArrayList/object, tier dùng enum không box khi làm key)</li>
+          <li>Payment Gateway connection → <code>IDisposable</code> + <code>using</code> đúng chuẩn</li>
+          <li>Notification fan-out → gỡ event đúng chỗ, không leak</li>
+          <li>Report buffer cuối kỳ → StringBuilder/ArrayPool thay vì nối string</li>
+        </ul>
+        <div class="metrics-box">
+          <p class="metrics-title">ĐO LẠI</p>
+          <ul><li>Đúng các chỉ số như vòng 1, để so sánh trực tiếp</li></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Deliverable</h2>
+    <p>Code (2 phiên bản naive + optimized) + 1 file báo cáo <code>report.md</code> theo đúng cấu trúc:</p>
+    <ol class="deliver-list">
+      <li>Tóm tắt bối cảnh nghiệp vụ (vài dòng)</li>
+      <li>Bảng số liệu đo NAIVE</li>
+      <li>Phân tích nguyên nhân — mỗi vấn đề chỉ rõ dòng code nào gây ra, quy về đúng khái niệm (value/reference type, stack/heap, object lifetime), không nói chung chung "chậm"</li>
+      <li>Giải pháp OPTIMIZED cho từng vấn đề đã nêu ở mục 3</li>
+      <li>Bảng số liệu đo OPTIMIZED</li>
+      <li>Bảng so sánh % cải thiện (thời gian / allocated bytes / GC count / memory cuối)</li>
+      <li>Kết luận & trade-off nếu có (VD: readonly struct có làm code kém tiện chỗ nào, Span có giới hạn gì trong domain này không)</li>
+    </ol>
+  </section>
+
+  <section class="constraints">
+    <h2 style="border-bottom:none;padding-bottom:0;margin-bottom:12px;">Ràng buộc</h2>
+    <ul>
+      <li>.NET 8+, chỉ xuất qua <code>Console.WriteLine</code> — không file/DB/network thật.</li>
+      <li>Không gọi <code>GC.Collect()</code> thủ công trong bản OPTIMIZED trừ khi dùng để đo leak (và phải ghi rõ trong report vì sao).</li>
+    </ul>
+  </section>
+
+  <footer>flashcart-engine · final-test · value-reference · stack-heap · object-lifetime</footer>
+
+</div>
+</body>
+</html>
